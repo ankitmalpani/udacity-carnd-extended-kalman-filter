@@ -100,30 +100,24 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
    float dt = (measurement_pack.timestamp_ - previous_timestamp_) / 1000000.0;	//dt - expressed in seconds
    previous_timestamp_ = measurement_pack.timestamp_; //reset the timestamp with new timestamp
 
-   // if (fabs(dt) > 0.000001f) //Re-predict if time diff is really small
-   // {
-      //Modify the F matrix so that the time is integrated
-      ekf_.F_(0, 2) = dt;
-      ekf_.F_(1, 3) = dt;
 
-      //set the process covariance matrix Q
-      float dt_2 = dt * dt;
-      float dt_3 = dt_2 * dt;
-      float dt_4 = dt_3 * dt;
+   //Modify the F matrix so that the time is integrated
+   ekf_.F_(0, 2) = dt;
+   ekf_.F_(1, 3) = dt;
 
-      ekf_.Q_ = MatrixXd(4, 4);
-      ekf_.Q_ <<  dt_4/4*noise_ax, 0.0f, dt_3/2*noise_ax, 0.0f,
-                 0.0f, dt_4/4*noise_ay, 0.0f, dt_3/2*noise_ay,
-                 dt_3/2*noise_ax, 0.0f, dt_2*noise_ax, 0.0f,
-                 0.0f, dt_3/2*noise_ay, 0.0f, dt_2*noise_ay;
+   //set the process covariance matrix Q
+   float dt_2 = dt * dt;
+   float dt_3 = dt_2 * dt;
+   float dt_4 = dt_3 * dt;
 
-     ekf_.Predict();
-     std::cout << "predict step done" << endl;
-    // }
-    // else{
-    //      std::cout << "Re-predicting as time diff is really small" << endl;
-    // }
+   ekf_.Q_ = MatrixXd(4, 4);
+   ekf_.Q_ <<  dt_4/4*noise_ax, 0.0f, dt_3/2*noise_ax, 0.0f,
+             0.0f, dt_4/4*noise_ay, 0.0f, dt_3/2*noise_ay,
+             dt_3/2*noise_ax, 0.0f, dt_2*noise_ax, 0.0f,
+             0.0f, dt_3/2*noise_ay, 0.0f, dt_2*noise_ay;
 
+   ekf_.Predict();
+   std::cout << "predict step done" << endl;
 
   /*****************************************************************************
    *  Update
