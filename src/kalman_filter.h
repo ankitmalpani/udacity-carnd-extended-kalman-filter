@@ -66,7 +66,10 @@ public:
    */
   void UpdateEKF(const Eigen::VectorXd &z);
 
-  Eigen::VectorXd GetPolarizedPrediction();
+  /**
+  * returns the angle value between -pi and pi
+  */
+  double NormalizeAngle(double angle);
 
 };
 

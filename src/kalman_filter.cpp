@@ -41,41 +41,35 @@ void KalmanFilter::Update(const VectorXd &z) {
 }
 
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
-  VectorXd x_polar = GetPolarizedPrediction();
+    // convert cartesian to polar coordinates
+    double
+            px = x_(0),
+            py = x_(1),
+            vx = x_(2),
+            vy = x_(3);
+    double ro = sqrt(px * px + py * py),
+            theta = NormalizeAngle(atan2(py, px)),
+            ro_dot = (px * vx + py * vy) / ro;
 
-  VectorXd y = z - x_polar;
-  MatrixXd Ht = H_.transpose(); //already initialized as jacobian when Radar
-  MatrixXd Pht = P_ * Ht;
-  MatrixXd S = (H_ * Pht) + R_;
-  MatrixXd K = Pht * S.inverse();
+    VectorXd h(3);
+    h << ro, theta, ro_dot;
 
-  //new estimate
-  x_ = x_ + (K * y);
-  long x_size = x_.size();
-  MatrixXd I = MatrixXd::Identity(x_size, x_size);
-  P_ = (I - (K * H_)) * P_;
+    VectorXd y = z - h;
+    y(1) = NormalizeAngle(y(1));
 
+    // now continue using the same ol' kalman filter equations
+    MatrixXd Ht = H_.transpose();
+    MatrixXd S = H_ * P_ * Ht + R_;
+    MatrixXd K = P_ * Ht * S.inverse();
+
+    //new estimate
+    x_ = x_ + (K * y);
+    long size = x_.size();
+    MatrixXd I = MatrixXd::Identity(size, size);
+    P_ = (I - K * H_) * P_;
 }
 
-VectorXd KalmanFilter::GetPolarizedPrediction() {
-    VectorXd measurement_vector(3);
-    float px = x_(0);
-    float py = x_(1);
-    float vx = x_(2);
-    float vy = x_(3);
-    float norm = sqrt((px * px) + (py * py));
-
-    /* Check for divide by 0s */
-    if (norm > 0.00001f)
-    {
-      measurement_vector(0) = norm;
-      measurement_vector(1) = atan2(py, px);
-      measurement_vector(2) = ((px * vx) + (py * vy)) / norm;
-    }
-    else
-    {
-      measurement_vector = (H_ * x_); //revert to  jacobian instead if zero divison
-    }
-
-    return measurement_vector;
+double KalmanFilter::NormalizeAngle(double angle) {
+    double TWO_PI = 2.0 * M_PI;
+    return angle - TWO_PI * floor((angle + M_PI) / TWO_PI);
 }
